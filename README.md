@@ -17,8 +17,9 @@ Built with **LangChain**, **OpenAI**, **FAISS** and **Streamlit** as a hands-on 
 - **One-click summaries.** You get an overview paragraph plus key takeaways. Long videos are handled with map-reduce summarization.
 - **Smart transcript loading.** The app prefers manual English captions, falls back to auto-generated ones, then to machine-translated English.
 - **Conversational memory.** Follow-ups like "tell me more about that" work: each one is rewritten into a standalone question using the chat history before searching, and the app shows what it searched for.
+- **Streaming answers.** Replies appear word by word as the model writes them, like ChatGPT, instead of after a long pause.
 - **Tunable retrieval.** Change the chat model, chunk size and *k* from the sidebar and see how answers change.
-- **Tested offline.** 40 tests (unit + Streamlit UI) use fake LLMs and embeddings, so they run in about a second with no API key and no cost.
+- **Tested offline.** 42 tests (unit + Streamlit UI) use fake LLMs and embeddings, so they run in about a second with no API key and no cost.
 
 ## 🧠 How it works
 
@@ -90,7 +91,7 @@ Then open http://localhost:8501. In VS Code you can also use **Run and Debug →
 ## 🧪 Tests and linting
 
 ```bash
-pytest -q          # 40 tests, run offline in about a second
+pytest -q          # 42 tests, run offline in about a second
 ruff check .       # lint
 ```
 
@@ -130,7 +131,7 @@ docker run -p 8501:8501 --env-file .env youtube-rag-bot
 - [x] Conversational memory: rewrite follow-up questions using chat history
 - [ ] Hybrid retrieval (BM25 + vectors) and re-ranking
 - [ ] Persist FAISS indexes to disk so revisited videos skip embedding
-- [ ] Stream answers token by token
+- [x] Stream answers token by token
 - [ ] Multi-video and playlist search
 - [ ] Retrieval evaluation set (hit rate / MRR) to tune chunk size and *k*
 
