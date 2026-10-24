@@ -26,6 +26,20 @@ COMBINE_PROMPT = ChatPromptTemplate.from_messages(
     ]
 )
 
+CONDENSE_PROMPT = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            "You rewrite follow-up questions about a YouTube video into standalone search "
+            "queries. Use the chat history to resolve references like 'it', 'that', 'the "
+            "second one' or 'tell me more'. Keep the user's meaning and wording where you can. "
+            "If the question already stands on its own, return it unchanged. Reply with the "
+            "rewritten question only, no explanation.",
+        ),
+        ("human", "Chat history:\n{history}\n\nFollow-up question: {question}"),
+    ]
+)
+
 QA_PROMPT = ChatPromptTemplate.from_messages(
     [
         (
@@ -36,6 +50,6 @@ QA_PROMPT = ChatPromptTemplate.from_messages(
             "claims it supports. If the excerpts don't contain the answer, say you couldn't "
             "find it in the video rather than guessing.",
         ),
-        ("human", "Transcript excerpts:\n{context}\n\nQuestion: {question}"),
+        ("human", "Transcript excerpts:\n{context}\n\n{history}Question: {question}"),
     ]
 )

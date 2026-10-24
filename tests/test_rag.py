@@ -75,3 +75,70 @@ def test_summarize_map_reduce_for_long_transcripts(segments):
 def test_empty_transcript_rejected():
     with pytest.raises(ValueError):
         make_qa([])
+
+# --- conversational memory -------------------------------------------------
+def recording_llm(calls, condensed="What is FAISS used for?", answer="an answer"):
+    """A fake LLM that records which prompt it got and replies accordingly."""
+
+    def _llm(prompt_value):
+        messages = prompt_value.to_messages()
+        if messages[0].content.startswith("You rewrite follow-up questions"):
+            calls.append(("condense", messages[-1].content))
+            return condensed
+        calls.append(("answer", messages[-1].content))
+        return answer
+
+    return RunnableLambda(_llm)
+
+
+HISTORY = [
+    {"role": "user", "content": "How are vectors stored?"},
+    {"role": "assistant", "content": "They are stored in a FAISS index [0:15]."},
+]
+
+
+def test_first_question_skips_condense(segments):
+    qa = make_qa(segments)
+    calls = []
+    qa.llm = recording_llm(calls)
+    result = qa.answer("How are vectors stored?")
+    assert [c[0] for c in calls] == ["answer"]
+    assert result.search_query == "How are vectors stored?"
+
+
+def test_follow_up_is_condensed_and_used_for_retrieval(segments, monkeypatch):
+    qa = make_qa(segments)
+    calls = []
+    qa.llm = recording_llm(calls)
+    searched = []
+    original_retrieve = qa.retrieve
+    monkeypatch.setattr(
+        qa, "retrieve", lambda q, k=None: searched.append(q) or original_retrieve(q, k)
+    )
+
+    result = qa.answer("What is it used for?", history=HISTORY)
+
+    assert [c[0] for c in calls] == ["condense", "answer"]
+    assert "FAISS index" in calls[0][1]  # the history reached the rewrite prompt
+    assert searched == ["What is FAISS used for?"]  # retrieval used the rewrite
+    assert result.search_query == "What is FAISS used for?"
+    assert "Recent conversation" in calls[1][1]  # history also reaches the answer prompt
+    assert "What is it used for?" in calls[1][1]  # but the user's own words are answered
+
+
+def test_empty_rewrite_falls_back_to_original(segments):
+    qa = make_qa(segments)
+    qa.llm = recording_llm([], condensed="   ")
+    assert qa.answer("And then?", history=HISTORY).search_query == "And then?"
+
+
+def test_format_history_limits_and_trims():
+    from core.rag import format_history
+
+    history = [{"role": "user", "content": f"q{i}"} for i in range(10)]
+    assert format_history(history, max_messages=3).splitlines() == [
+        "User: q7", "User: q8", "User: q9"
+    ]
+    long = [{"role": "assistant", "content": "x" * 1000}]
+    assert format_history(long, max_messages=6, max_chars=50) == "Assistant: " + "x" * 50 + "…"
+    assert format_history(history, max_messages=0) == ""

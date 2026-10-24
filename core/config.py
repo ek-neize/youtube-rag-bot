@@ -33,6 +33,10 @@ class Settings:
     )
     # Retrieval: how many chunks to hand the LLM per question
     top_k: int = field(default_factory=lambda: _env_int("TOP_K", 5))
+    # Conversational memory: how many past chat messages to consider for follow-ups
+    max_history_messages: int = field(
+        default_factory=lambda: _env_int("MAX_HISTORY_MESSAGES", 6)
+    )
     # Transcripts longer than this (characters) are summarized map-reduce style
     max_single_pass_chars: int = field(
         default_factory=lambda: _env_int("MAX_SINGLE_PASS_CHARS", 100_000)

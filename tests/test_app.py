@@ -54,3 +54,17 @@ def test_full_flow_answer_with_sources(app, segments):
     assert contents == ["Where are vectors stored?", "Vectors live in FAISS [0:15]."]
     # source "jump" buttons were rendered for the answer
     assert any(b.label.startswith("▶") for b in app.button)
+
+def test_follow_up_shows_rewritten_search(app, segments):
+    with (
+        patch("core.transcript.fetch_transcript", return_value=segments),
+        patch("core.rag.build_openai_qa", side_effect=fake_builder),
+    ):
+        app.run()
+        app.text_input(key="url").input(URL).run()
+        app.chat_input[0].set_value("Where are vectors stored?").run()
+        app.chat_input[0].set_value("Why?").run()
+        assert not app.exception, app.exception
+
+    captions = [c.value for c in app.caption]
+    assert any("Searched the transcript for" in c for c in captions)
