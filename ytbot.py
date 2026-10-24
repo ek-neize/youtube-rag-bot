@@ -201,23 +201,33 @@ with right:
         # earlier turns, so follow-ups like "tell me more about that" make sense
         history = st.session_state.messages if use_memory else []
         st.session_state.messages.append({"role": "user", "content": question})
-        try:
-            with chat_box, st.spinner("Searching the transcript…"):
-                result = qa.answer(question, k=settings.top_k, history=history)
-            rewritten = result.search_query.strip() != question.strip()
-            st.session_state.messages.append(
-                {
-                    "role": "assistant",
-                    "content": result.text,
-                    "sources": result.sources,
-                    "search_query": result.search_query if rewritten else None,
-                }
-            )
-        except Exception as e:
-            st.session_state.messages.append(
-                {"role": "assistant", "content": f"⚠️ Couldn't answer that: {e}"}
-            )
-        st.rerun()
+        with chat_box:
+            with st.chat_message("user"):
+                st.markdown(question)
+            with st.chat_message("assistant"):
+                try:
+                    with st.spinner("Searching the transcript…"):
+                        stream, result = qa.stream_answer(
+                            question, k=settings.top_k, history=history
+                        )
+                    rewritten = result.search_query.strip() != question.strip()
+                    if rewritten:
+                        st.caption(f"🔎 Searched the transcript for: *{result.search_query}*")
+                    # the answer appears word by word; write_stream returns the full text
+                    text = st.write_stream(stream)
+                    st.session_state.messages.append(
+                        {
+                            "role": "assistant",
+                            "content": text,
+                            "sources": result.sources,
+                            "search_query": result.search_query if rewritten else None,
+                        }
+                    )
+                except Exception as e:
+                    st.session_state.messages.append(
+                        {"role": "assistant", "content": f"⚠️ Couldn't answer that: {e}"}
+                    )
+        st.rerun()  # redraw the chat with the sources and ▶ buttons
 
     if st.session_state.messages and st.button("Clear chat"):
         st.session_state.messages = []

@@ -142,3 +142,27 @@ def test_format_history_limits_and_trims():
     long = [{"role": "assistant", "content": "x" * 1000}]
     assert format_history(long, max_messages=6, max_chars=50) == "Assistant: " + "x" * 50 + "…"
     assert format_history(history, max_messages=0) == ""
+
+
+# --- streaming --------------------------------------------------------------
+def test_stream_answer_yields_pieces_that_join_to_the_answer(segments):
+    qa = make_qa(segments, responses=["Vectors live in FAISS [0:15]."])
+    stream, result = qa.stream_answer("How are vectors stored?")
+
+    # retrieval already happened: sources are known before any text arrives
+    assert len(result.sources) == SETTINGS.top_k
+    assert result.search_query == "How are vectors stored?"
+
+    pieces = list(stream)
+    assert len(pieces) > 1  # it really arrives in parts, not one block
+    assert "".join(pieces) == "Vectors live in FAISS [0:15]."
+
+
+def test_stream_answer_uses_memory_too(segments):
+    qa = make_qa(segments)
+    calls = []
+    qa.llm = recording_llm(calls)
+    stream, result = qa.stream_answer("What is it used for?", history=HISTORY)
+    assert result.search_query == "What is FAISS used for?"
+    assert "".join(stream) == "an answer"
+    assert [c[0] for c in calls] == ["condense", "answer"]

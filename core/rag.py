@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 
 from langchain_community.vectorstores import FAISS
@@ -98,27 +99,41 @@ class VideoQA:
         rewritten = chain.invoke({"history": history_text, "question": question}).strip()
         return rewritten or question
 
+    def _prepare(
+        self, question: str, k: int | None, history: list[Message] | None
+    ) -> tuple[str, list[Document], dict]:
+        """Shared first half of answering: rewrite the question, retrieve, build prompt inputs."""
+        history = history or []
+        search_query = self.condense_question(question, history) if history else question
+        docs = sorted(self.retrieve(search_query, k), key=lambda d: d.metadata["start"])
+        history_text = format_history(history, self.settings.max_history_messages)
+        inputs = {
+            "context": format_context(docs),
+            "history": f"Recent conversation:\n{history_text}\n\n" if history_text else "",
+            "question": question,
+        }
+        return search_query, docs, inputs
+
     def answer(
         self, question: str, k: int | None = None, history: list[Message] | None = None
     ) -> Answer:
-        history = history or []
-        search_query = self.condense_question(question, history) if history else question
-        docs = self.retrieve(search_query, k)
-
-        history_text = format_history(history, self.settings.max_history_messages)
+        """Answer in one go (used by tests and anything that doesn't need streaming)."""
+        search_query, docs, inputs = self._prepare(question, k, history)
         chain = QA_PROMPT | self.llm | self._parser
-        text = chain.invoke(
-            {
-                "context": format_context(docs),
-                "history": f"Recent conversation:\n{history_text}\n\n" if history_text else "",
-                "question": question,
-            }
-        )
-        return Answer(
-            text=text,
-            sources=sorted(docs, key=lambda d: d.metadata["start"]),
-            search_query=search_query,
-        )
+        return Answer(text=chain.invoke(inputs), sources=docs, search_query=search_query)
+
+    def stream_answer(
+        self, question: str, k: int | None = None, history: list[Message] | None = None
+    ) -> tuple[Iterator[str], Answer]:
+        """Retrieve now, then return a generator that yields the answer piece by piece.
+
+        Retrieval happens before this returns, so the sources and the rewritten search
+        are known straight away; the returned Answer has an empty `text` until the
+        caller has consumed the stream (st.write_stream returns the full text).
+        """
+        search_query, docs, inputs = self._prepare(question, k, history)
+        chain = QA_PROMPT | self.llm | self._parser
+        return chain.stream(inputs), Answer(text="", sources=docs, search_query=search_query)
 
     def summarize(self) -> str:
         text = transcript_to_text(self.segments, with_timestamps=False)
@@ -147,6 +162,7 @@ def build_openai_qa(video_id: str, segments: list[Segment], settings: Settings) 
         temperature=0,
         max_tokens=900,
         api_key=settings.openai_api_key,
+        streaming=True,
     )
     embeddings = OpenAIEmbeddings(model=settings.embedding_model, api_key=settings.openai_api_key)
     return VideoQA(video_id, segments, llm, embeddings, settings)
