@@ -8,9 +8,7 @@ Built with **LangChain**, **OpenAI**, **FAISS** and **Streamlit** as a hands-on 
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-<!-- After your first run, take a screenshot, save it as docs/screenshot.png and uncomment:
 ![App screenshot](docs/screenshot.png)
--->
 
 ## ✨ Features
 
