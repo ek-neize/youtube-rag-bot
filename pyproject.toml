@@ -1,0 +1,18 @@
+[project]
+name = "youtube-rag-bot"
+version = "1.0.0"
+description = "Chat with any YouTube video: a RAG app built with LangChain, OpenAI, FAISS and Streamlit."
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Ekow Ashun" }]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore:'asyncio.iscoroutinefunction' is deprecated:DeprecationWarning"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
