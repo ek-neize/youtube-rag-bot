@@ -19,7 +19,7 @@ Built with **LangChain**, **OpenAI**, **FAISS** and **Streamlit** as a hands-on 
 - **Conversational memory.** Follow-ups like "tell me more about that" work: each one is rewritten into a standalone question using the chat history before searching, and the app shows what it searched for.
 - **Streaming answers.** Replies appear word by word as the model writes them, like ChatGPT, instead of after a long pause.
 - **Tunable retrieval.** Change the chat model, chunk size and *k* from the sidebar and see how answers change.
-- **Tested offline.** 42 tests (unit + Streamlit UI) use fake LLMs and embeddings, so they run in about a second with no API key and no cost.
+- **Tested offline.** 59 tests (unit + Streamlit UI) use fake LLMs and embeddings, so they run in about a second with no API key and no cost.
 
 ## 🧠 How it works
 
@@ -91,11 +91,41 @@ Then open http://localhost:8501. In VS Code you can also use **Run and Debug →
 ## 🧪 Tests and linting
 
 ```bash
-pytest -q          # 42 tests, run offline in about a second
+pytest -q          # 59 tests, run offline in about a second
 ruff check .       # lint
 ```
 
 GitHub Actions runs both on every push and pull request.
+
+## 📏 Retrieval evaluation
+
+A RAG app is only as good as its retrieval: if the right part of the transcript isn't retrieved, the model can't answer. So the project includes a small evaluation harness.
+
+- **Test set:** [`evals/neural_networks.json`](evals/neural_networks.json) has 21 questions about [3Blue1Brown's neural network video](https://www.youtube.com/watch?v=aircAruvnKk), each labelled with the time range where the answer is spoken.
+- **Hit rate@k:** share of questions where a correct chunk (one overlapping the answer's time range) is in the top *k*.
+- **MRR@k:** mean reciprocal rank; 1.0 means the right chunk is always ranked first.
+- **Video retrieved:** how much of the video the top *k* chunks span. Big chunks and big *k* inflate hit rate by retrieving more of the video, so the best setting is chosen among those retrieving at most 25%.
+
+```bash
+python scripts/evaluate_retrieval.py --show-misses --save evals/results.md
+```
+
+Results (`text-embedding-3-small`):
+
+| Chunk size | Chunks | k | Hit rate | MRR | Video retrieved |
+|---:|---:|---:|---:|---:|---:|
+| 500 | 55 | 1 | 62% | 0.62 | 3% |
+| 500 | 55 | 3 | 81% | 0.71 | 7% |
+| 500 | 55 | 5 | 90% | 0.74 | 12% |
+| 1000 | 22 | 1 | 90% | 0.90 | 5% |
+| 1000 | 22 | 3 | 90% | 0.90 | 15% |
+| 1000 | 22 | 5 | 100% | 0.93 | 25% |
+| 1500 | 14 | 1 | 86% | 0.86 | 8% |
+| 1500 | 14 | 3 | 95% | 0.90 | 23% |
+| 1500 | 14 | 5 | 100% | 0.91 | 38% |
+| 2000 | 10 | 1 | 76% | 0.76 | 11% |
+| 2000 | 10 | 3 | 90% | 0.83 | 31% |
+| 2000 | 10 | 5 | 95% | 0.84 | 51% |
 
 ## 🐳 Docker
 
@@ -133,7 +163,7 @@ docker run -p 8501:8501 --env-file .env youtube-rag-bot
 - [ ] Persist FAISS indexes to disk so revisited videos skip embedding
 - [x] Stream answers token by token
 - [ ] Multi-video and playlist search
-- [ ] Retrieval evaluation set (hit rate / MRR) to tune chunk size and *k*
+- [x] Retrieval evaluation set (hit rate / MRR) to tune chunk size and *k*
 
 ## 🙏 Acknowledgements
 

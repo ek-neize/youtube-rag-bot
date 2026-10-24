@@ -1,0 +1,28 @@
+{
+  "video_id": "aircAruvnKk",
+  "title": "3Blue1Brown - But what is a neural network? | Deep learning chapter 1",
+  "notes": "Each case gives the time range (m:ss) where the answer is spoken. A retrieved chunk is correct if it overlaps that range.",
+  "cases": [
+    {"question": "What is a neuron in this video?", "answer_start": "2:52", "answer_end": "3:03"},
+    {"question": "How many neurons are in the input layer, and why that many?", "answer_start": "3:03", "answer_end": "3:14"},
+    {"question": "What does a neuron's activation represent?", "answer_start": "3:14", "answer_end": "3:36"},
+    {"question": "How many neurons does the output layer have and what do they mean?", "answer_start": "3:46", "answer_end": "4:03"},
+    {"question": "How many hidden layers are used, and how many neurons in each?", "answer_start": "4:14", "answer_end": "4:28"},
+    {"question": "How does the network decide which digit an image is?", "answer_start": "5:22", "answer_end": "5:32"},
+    {"question": "What parts make up digits like 9, 8 and 4?", "answer_start": "5:48", "answer_end": "6:07"},
+    {"question": "What might the second layer of the network detect?", "answer_start": "7:15", "answer_end": "7:23"},
+    {"question": "Besides images, what other tasks break down into layers of abstraction?", "answer_start": "8:00", "answer_end": "8:21"},
+    {"question": "How is a weighted sum of the first layer computed?", "answer_start": "9:08", "answer_end": "9:27"},
+    {"question": "How can negative weights help detect an edge?", "answer_start": "9:59", "answer_end": "10:14"},
+    {"question": "What does the sigmoid function do?", "answer_start": "10:24", "answer_end": "10:49"},
+    {"question": "What is the bias for?", "answer_start": "10:57", "answer_end": "11:36"},
+    {"question": "How many weights and biases does the whole network have?", "answer_start": "12:18", "answer_end": "12:31"},
+    {"question": "How does the network learn?", "answer_start": "12:31", "answer_end": "12:42"},
+    {"question": "Why is it useful to understand what the weights and biases mean?", "answer_start": "12:56", "answer_end": "13:26"},
+    {"question": "How are the connections written using matrices and vectors?", "answer_start": "13:40", "answer_end": "14:14"},
+    {"question": "Why does linear algebra matter for machine learning?", "answer_start": "14:14", "answer_end": "14:29"},
+    {"question": "Why is a neuron better thought of as a function?", "answer_start": "15:17", "answer_end": "15:39"},
+    {"question": "Why don't modern networks use sigmoid anymore?", "answer_start": "17:15", "answer_end": "17:39"},
+    {"question": "What is ReLU?", "answer_start": "17:39", "answer_end": "18:11"}
+  ]
+}
