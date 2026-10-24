@@ -63,8 +63,12 @@ youtube-rag-bot/
 │   ├── config.py         # Settings from env vars / .env
 │   ├── transcript.py     # URL parsing, transcript fetching, time-aware chunking
 │   ├── prompts.py        # Summary, combine and Q&A prompts
-│   └── rag.py            # VideoQA: FAISS index, retrieval, answer & summarize
+│   ├── rag.py            # VideoQA: FAISS index, retrieval, answer & summarize
+│   └── evaluation.py     # Retrieval metrics: hit rate, MRR, coverage
 ├── tests/                # Offline unit + UI tests (fake LLM + embeddings)
+├── evals/                # Retrieval test set (questions + answer timestamps) and results
+├── scripts/
+│   └── evaluate_retrieval.py   # Hit rate / MRR / coverage across chunk sizes and k
 ├── .github/workflows/    # CI: lint + tests on every push
 ├── .vscode/              # Run/debug configs, test discovery, formatter
 ├── Dockerfile
@@ -119,13 +123,15 @@ Results (`text-embedding-3-small`):
 | 500 | 55 | 5 | 90% | 0.74 | 12% |
 | 1000 | 22 | 1 | 90% | 0.90 | 5% |
 | 1000 | 22 | 3 | 90% | 0.90 | 15% |
-| 1000 | 22 | 5 | 100% | 0.93 | 25% |
+| **1000** | **22** | **5** | **100%** | **0.93** | **25%** |
 | 1500 | 14 | 1 | 86% | 0.86 | 8% |
 | 1500 | 14 | 3 | 95% | 0.90 | 23% |
 | 1500 | 14 | 5 | 100% | 0.91 | 38% |
 | 2000 | 10 | 1 | 76% | 0.76 | 11% |
 | 2000 | 10 | 3 | 90% | 0.83 | 31% |
 | 2000 | 10 | 5 | 95% | 0.84 | 51% |
+
+**Findings.** 1,000-character chunks performed best: the correct moment was the top result for 90% of questions while retrieving only 5% of the video, and within the top 5 for all 21 questions (25% of the video). Smaller chunks split answers across boundaries (62% at k=1); larger ones blended several topics into one embedding (76% at k=1). These results confirm the app's defaults (1,000-character chunks, k=5). With 21 questions, each one is worth about 5 points, so small differences aren't meaningful.
 
 ## 🐳 Docker
 
