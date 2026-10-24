@@ -94,6 +94,11 @@ with st.sidebar:
     chat_model = st.selectbox(
         "Chat model", model_options, index=model_options.index(base.chat_model)
     )
+    use_memory = st.toggle(
+        "Remember conversation",
+        value=True,
+        help="Rewrites follow-up questions using earlier chat turns before searching.",
+    )
     top_k = st.slider("Chunks retrieved per question (k)", 2, 10, min(max(base.top_k, 2), 10))
     size_options = sorted({500, 750, 1000, 1500, 2000, base.chunk_size})
     chunk_size = st.select_slider(
@@ -106,8 +111,9 @@ with st.sidebar:
         "1. Fetch the transcript\n"
         "2. Split it into time-stamped chunks\n"
         "3. Embed chunks into a FAISS index\n"
-        "4. Retrieve the top-k chunks for your question\n"
-        "5. The LLM answers, citing timestamps"
+        "4. Rewrite follow-ups into standalone questions\n"
+        "5. Retrieve the top-k chunks for the question\n"
+        "6. The LLM answers, citing timestamps"
     )
 
 settings = dataclasses.replace(
@@ -185,17 +191,27 @@ with right:
             st.caption("Try: *What are the main arguments?* or *When do they talk about pricing?*")
         for i, msg in enumerate(st.session_state.messages):
             with st.chat_message(msg["role"]):
+                if msg.get("search_query"):
+                    st.caption(f"🔎 Searched the transcript for: *{msg['search_query']}*")
                 st.markdown(msg["content"])
                 if msg.get("sources"):
                     render_sources(msg["sources"], video_id, i)
 
     if question := st.chat_input("Ask a question about this video"):
+        # earlier turns, so follow-ups like "tell me more about that" make sense
+        history = st.session_state.messages if use_memory else []
         st.session_state.messages.append({"role": "user", "content": question})
         try:
             with chat_box, st.spinner("Searching the transcript…"):
-                result = qa.answer(question, k=settings.top_k)
+                result = qa.answer(question, k=settings.top_k, history=history)
+            rewritten = result.search_query.strip() != question.strip()
             st.session_state.messages.append(
-                {"role": "assistant", "content": result.text, "sources": result.sources}
+                {
+                    "role": "assistant",
+                    "content": result.text,
+                    "sources": result.sources,
+                    "search_query": result.search_query if rewritten else None,
+                }
             )
         except Exception as e:
             st.session_state.messages.append(

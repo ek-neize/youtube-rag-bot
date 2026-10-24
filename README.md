@@ -16,8 +16,9 @@ Built with **LangChain**, **OpenAI**, **FAISS** and **Streamlit** as a hands-on 
 - **Cited, clickable sources.** Each answer lists the transcript excerpts it used, with ▶ buttons that seek the embedded player to that moment.
 - **One-click summaries.** You get an overview paragraph plus key takeaways. Long videos are handled with map-reduce summarization.
 - **Smart transcript loading.** The app prefers manual English captions, falls back to auto-generated ones, then to machine-translated English.
+- **Conversational memory.** Follow-ups like "tell me more about that" work: each one is rewritten into a standalone question using the chat history before searching, and the app shows what it searched for.
 - **Tunable retrieval.** Change the chat model, chunk size and *k* from the sidebar and see how answers change.
-- **Tested offline.** 35 tests (unit + Streamlit UI) use fake LLMs and embeddings, so they run in about a second with no API key and no cost.
+- **Tested offline.** 40 tests (unit + Streamlit UI) use fake LLMs and embeddings, so they run in about a second with no API key and no cost.
 
 ## 🧠 How it works
 
@@ -37,7 +38,7 @@ flowchart LR
 1. **Load:** fetch the video's captions as timed segments.
 2. **Chunk:** group consecutive captions into ~1,000-character chunks, with a small overlap, keeping each chunk's start and end time.
 3. **Embed and index:** convert chunks to vectors and store them in an in-memory FAISS index (built once per video and cached).
-4. **Retrieve:** embed the question and pull the *k* most similar chunks.
+4. **Retrieve:** rewrite follow-ups into standalone questions using the chat history, then embed the question and pull the *k* most similar chunks.
 5. **Generate:** the LLM answers using only those chunks, each labelled like `[2:15-2:48]`, and cites the times it relied on.
 
 ## 🛠️ Design decisions
@@ -89,7 +90,7 @@ Then open http://localhost:8501. In VS Code you can also use **Run and Debug →
 ## 🧪 Tests and linting
 
 ```bash
-pytest -q          # 35 tests, run offline in about a second
+pytest -q          # 40 tests, run offline in about a second
 ruff check .       # lint
 ```
 
@@ -112,6 +113,7 @@ docker run -p 8501:8501 --env-file .env youtube-rag-bot
 | `CHUNK_SIZE` | `1000` | Target characters per chunk |
 | `CHUNK_OVERLAP_SEGMENTS` | `2` | Caption lines shared between neighbouring chunks |
 | `TOP_K` | `5` | Chunks retrieved per question |
+| `MAX_HISTORY_MESSAGES` | `6` | Past chat messages used to understand follow-ups |
 | `MAX_SINGLE_PASS_CHARS` | `100000` | Above this, summaries use map-reduce |
 
 ## 🩺 Troubleshooting
@@ -125,7 +127,7 @@ docker run -p 8501:8501 --env-file .env youtube-rag-bot
 
 ## 🗺️ Roadmap
 
-- [ ] Conversational memory: rewrite follow-up questions using chat history
+- [x] Conversational memory: rewrite follow-up questions using chat history
 - [ ] Hybrid retrieval (BM25 + vectors) and re-ranking
 - [ ] Persist FAISS indexes to disk so revisited videos skip embedding
 - [ ] Stream answers token by token
